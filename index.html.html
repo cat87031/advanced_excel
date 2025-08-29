@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>發音及拼讀遊戲 - 單字學習系統</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial Rounded MT Bold', 'Helvetica Rounded', Arial, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+        
+        header {
+            background: #5c6bc0;
+            color: white;
+            padding: 25px;
+            text-align: center;
+            border-bottom: 5px solid #3f51b5;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .description {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            background: #e8eaf6;
+            border-bottom: 2px solid #c5cae9;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            background: #5c6bc0;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:hover {
+            background: #3f51b5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn.active {
+            background: #ff5722;
+            box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.3);
+        }
+        
+        .accent-toggle {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            padding: 8px 15px;
+            border-radius: 50px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .accent-toggle span {
+            margin-right: 10px;
+            font-weight: bold;
+            color: #5c6bc0;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2196F3;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #FF5722;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+        
+        .content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .word-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .word-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .word-number {
+            background: #ff5722;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .word-en {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #3f51b5;
+            margin-bottom: 10px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .word-cn {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .play-sound {
+            background: #5c6bc0;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(92, 107, 192, 0.3);
+        }
+        
+        .play-sound:hover {
+            background: #3f51b5;
+            transform: scale(1.1);
+        }
+        
+        .upload-section {
+            padding: 20px;
+            background: #e8eaf6;
+            text-align: center;
+            border-bottom: 2px solid #c5cae9;
+        }
+        
+        .file-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .file-upload-label {
+            display: inline-block;
+            padding: 12px 25px;
+            background: #5c6bc0;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .file-upload-label:hover {
+            background: #3f51b5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: #e8eaf6;
+            color: #5c6bc0;
+            font-weight: bold;
+            border-top: 2px solid #c5cae9;
+        }
+        
+        .mode-container {
+            display: none;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .mode-container.active {
+            display: block;
+        }
+        
+        .practice-mode, .quiz-mode {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .quiz-question {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: #3f51b5;
+        }
+        
+        .quiz-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .quiz-option {
+            padding: 15px;
+            background: #e8eaf6;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .quiz-option:hover {
+            background: #5c6bc0;
+            color: white;
+        }
+        
+        .quiz-feedback {
+            font-size: 1.2rem;
+            margin: 20px 0;
+            min-height: 30px;
+        }
+        
+        .correct {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .incorrect {
+            color: #F44336;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .quiz-options {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>發音及拼讀遊戲</h1>
+            <p class="description">上傳Excel單字檔學習英文單字，加強發音與拼讀能力。提供三種學習模式，可切換英國腔或美國腔發音。</p>
+        </header>
+        
+        <div class="upload-section">
+            <h2>上傳單字Excel檔</h2>
+            <p>請上傳符合格式的Excel檔案（.xlsx），包含英文單字和中文翻譯欄位</p>
+            <div class="file-upload">
+                <label for="file-upload-input" class="file-upload-label">選擇Excel檔案</label>
+                <input type="file" id="file-upload-input" accept=".xlsx">
+                <button class="btn" onclick="downloadTemplate()">下載Excel範本</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn active" data-mode="learn">學習模式</button>
+            <button class="btn" data-mode="practice">拼讀練習</button>
+            <button class="btn" data-mode="quiz">測驗模式</button>
+            
+            <div class="accent-toggle">
+                <span>發音選擇: </span>
+                <label class="switch">
+                    <input type="checkbox" id="accentToggle">
+                    <span class="slider"></span>
+                </label>
+                <span id="accentLabel">英國腔</span>
+            </div>
+        </div>
+        
+        <!-- 學習模式 -->
+        <div class="mode-container active" id="learn-mode">
+            <div class="content" id="word-container">
+                <!-- 單字卡片將由JavaScript生成 -->
+            </div>
+        </div>
+        
+        <!-- 拼讀練習模式 -->
+        <div class="mode-container" id="practice-mode">
+            <div class="practice-mode">
+                <h2>拼讀練習</h2>
+                <p>聽取發音並拼寫出單字，然後檢查是否正確</p>
+                <div class="quiz-question" id="practice-word"></div>
+                <input type="text" id="spelling-input" placeholder輸入單字">
+                <div class="quiz-feedback" id="practice-feedback"></div>
+                <button class="btn" onclick="checkSpelling()">檢查拼寫</button>
+                <button class="btn" onclick="nextPracticeWord()">下一個單字</button>
+            </div>
+        </div>
+        
+        <!-- 測驗模式 -->
+        <div class="mode-container" id="quiz-mode">
+            <div class="quiz-mode">
+                <h2>單字測驗</h2>
+                <p>選擇正確的中文翻譯</p>
+                <div class="quiz-question" id="quiz-word"></div>
+                <div class="quiz-options" id="quiz-options">
+                    <!-- 選項由JavaScript生成 -->
+                </div>
+                <div class="quiz-feedback" id="quiz-feedback"></div>
+                <button class="btn" onclick="nextQuizQuestion()">下一題</button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>發音及拼讀遊戲 - 單字學習系統 | 適合所有年齡層的英語學習者</p>
+        </footer>
+    </div>
+
+    <script>
+        // 單字資料
+        let words = [];
+        let currentPracticeIndex = 0;
+        let currentQuizIndex = 0;
+        let quizOptions = [];
+
+        // 初始化頁面
+        window.onload = function() {
+            // 載入預設單字
+            loadDefaultWords();
+            
+            // 為模式按鈕添加事件監聽器
+            const modeButtons = document.querySelectorAll('.controls .btn');
+            modeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const mode = this.getAttribute('data-mode');
+                    switchMode(mode);
+                    
+                    modeButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // 為檔案上傳添加事件監聽器
+            document.getElementById('file-upload-input').addEventListener('change', handleFileUpload);
+            
+            // 初始化測驗
+            initQuiz();
+        };
+        
+        // 載入預設單字
+        function loadDefaultWords() {
+            words = [
+                { en: "lobe", cn: "耳垂" },
+                { en: "robe", cn: "長袍" },
+                { en: "globe", cn: "地球儀" },
+                { en: "probe", cn: "探針" },
+                { en: "code", cn: "代碼" },
+                { en: "coke", cn: "可樂" },
+                { en: "choke", cn: "窒息" },
+                { en: "joke", cn: "笑話" },
+                { en: "smoke", cn: "煙" },
+                { en: "dome", cn: "圓頂" },
+                { en: "hole", cn: "洞" },
+                { en: "mole", cn: "痣" },
+                { en: "pole", cn: "桿" },
+                { en: "whole", cn: "全部" },
+                { en: "home", cn: "家" },
+                { en: "rope", cn: "繩子" },
+                { en: "slope", cn: "斜坡" },
+                { en: "hose", cn: "軟管" },
+                { en: "nose", cn: "鼻子" },
+                { en: "close", cn: "關閉" }
+            ];
+            
+            renderWords();
+        }
+        
+        // 處理檔案上傳
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // 取得第一個工作表
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                
+                // 將工作表轉換為JSON
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                
+                // 處理資料
+                words = jsonData.map(row => {
+                    // 嘗試不同的欄位名稱，以適應各種可能的Excel格式
+                    return {
+                        en: row['英文'] || row['english'] || row['word'] || row['單字'] || '',
+                        cn: row['中文'] || row['chinese'] || row['translation'] || row['翻譯'] || ''
+                    };
+                }).filter(word => word.en && word.cn); // 過濾掉空值
+                
+                if (words.length > 0) {
+                    renderWords();
+                    initQuiz();
+                    alert(`成功載入 ${words.length} 個單字`);
+                } else {
+                    alert('無法從Excel檔案中讀取單字資料，請下載範本查看格式要求');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        // 生成單字卡片
+        function renderWords() {
+            const container = document.getElementById('word-container');
+            container.innerHTML = '';
+            
+            words.forEach((word, index) => {
+                const card = document.createElement('div');
+                card.className = 'word-card';
+                
+                card.innerHTML = `
+                    <div class="word-number">${index + 1}</div>
+                    <div class="word-en">${word.en}</div>
+                    <div class="word-cn">${word.cn}</div>
+                    <button class="play-sound" onclick="playSound('${word.en}')">♪</button>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        // 播放發音
+        function playSound(word) {
+            const isBritish = document.getElementById('accentToggle').checked;
+            
+            // 使用Web Speech API實現發音
+            const speech = new SpeechSynthesisUtterance(word);
+            speech.lang = isBritish ? 'en-GB' : 'en-US';
+            window.speechSynthesis.speak(speech);
+        }
+        
+        // 切換發音腔調
+        document.getElementById('accentToggle').addEventListener('change', function() {
+            const label = document.getElementById('accentLabel');
+            label.textContent = this.checked ? '英國腔' : '美國腔';
+        });
+        
+        // 切換模式
+        function switchMode(mode) {
+            // 隱藏所有模式容器
+            document.querySelectorAll('.mode-container').forEach(container => {
+                container.classList.remove('active');
+            });
+            
+            // 顯示選定的模式
+            document.getElementById(`${mode}-mode`).classList.add('active');
+            
+            // 初始化特定模式
+            if (mode === 'practice') {
+                initPractice();
+            } else if (mode === 'quiz') {
+                initQuiz();
+            }
+        }
+        
+        // 初始化拼讀練習
+        function initPractice() {
+            if (words.length === 0) return;
+            
+            currentPracticeIndex = 0;
+            nextPracticeWord();
+        }
+        
+        // 下一個練習單字
+        function nextPracticeWord() {
+            if (words.length === 0) return;
+            
+            // 隨機選擇一個單字
+            currentPracticeIndex = Math.floor(Math.random() * words.length);
+            const word = words[currentPracticeIndex];
+            
+            document.getElementById('practice-word').textContent = '聽取發音並拼寫單字';
+            document.getElementById('spelling-input').value = '';
+            document.getElementById('practice-feedback').textContent = '';
+            
+            // 播放發音
+            playSound(word.en);
+        }
+        
+        // 檢查拼寫
+        function checkSpelling() {
+            if (words.length === 0) return;
+            
+            const input = document.getElementById('spelling-input').value.trim().toLowerCase();
+            const correctWord = words[currentPracticeIndex].en.toLowerCase();
+            const feedback = document.getElementById('practice-feedback');
+            
+            if (input === correctWord) {
+                feedback.textContent = '正確！';
+                feedback.className = 'quiz-feedback correct';
+            } else {
+                feedback.textContent = `不正確，正確答案是: ${correctWord}`;
+                feedback.className = 'quiz-feedback incorrect';
+            }
+        }
+        
+        // 初始化測驗
+        function initQuiz() {
+            if (words.length === 0) return;
+            
+            currentQuizIndex = 0;
+            nextQuizQuestion();
+        }
+        
+        // 下一題測驗
+        function nextQuizQuestion() {
+            if (words.length === 0) return;
+            
+            // 隨機選擇一個單字作為題目
+            currentQuizIndex = Math.floor(Math.random() * words.length);
+            const questionWord = words[currentQuizIndex];
+            
+            document.getElementById('quiz-word').textContent = questionWord.en;
+            document.getElementById('quiz-feedback').textContent = '';
+            
+            // 生成選項（1個正確答案和3個錯誤答案）
+            quizOptions = [questionWord.cn];
+            
+            // 添加錯誤選項
+            while (quizOptions.length < 4) {
+                const randomIndex = Math.floor(Math.random() * words.length);
+                if (randomIndex !== currentQuizIndex && !quizOptions.includes(words[randomIndex].cn)) {
+                    quizOptions.push(words[randomIndex].cn);
+                }
+            }
+            
+            // 隨機排序選項
+            quizOptions.sort(() => Math.random() - 0.5);
+            
+            // 顯示選項
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+            
+            quizOptions.forEach(option => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'quiz-option';
+                optionElement.textContent = option;
+                optionElement.addEventListener('click', function() {
+                    checkAnswer(option, questionWord.cn);
+                });
+                optionsContainer.appendChild(optionElement);
+            });
+        }
+        
+        // 檢查測驗答案
+        function checkAnswer(selected, correct) {
+            const feedback = document.getElementById('quiz-feedback');
+            
+            if (selected === correct) {
+                feedback.textContent = '正確！';
+                feedback.className = 'quiz-feedback correct';
+            } else {
+                feedback.textContent = `不正確，正確答案是: ${correct}`;
+                feedback.className = 'quiz-feedback incorrect';
+            }
+        }
+        
+        // 下載Excel範本
+        function downloadTemplate() {
+            // 建立範本資料
+            const templateData = [
+                { '英文': 'apple', '中文': '蘋果' },
+                { '英文': 'book', '中文': '書' },
+                { '英文': 'cat', '中文': '貓' },
+                { '英文': 'dog', '中文': '狗' },
+                { '英文': 'egg', '中文': '雞蛋' }
+            ];
+            
+            // 建立工作表
+            const worksheet = XLSX.utils.json_to_sheet(templateData);
+            
+            // 建立工作簿並添加工作表
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, '單字表');
+            
+            // 生成Excel檔案並下載
+            XLSX.writeFile(workbook, '單字範本.xlsx');
+        }
+    </script>
+</body>
+</html>
